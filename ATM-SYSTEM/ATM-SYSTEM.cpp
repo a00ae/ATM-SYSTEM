@@ -7,6 +7,8 @@
 
 void ShowMainMenue();
 void PerfromNormalWithdrawOption();
+void ShowQuickWithdrawScreen();
+void Login();
 
 
 using namespace std;
@@ -225,7 +227,7 @@ vector <stClients> SaveCleintsDataToFile(string fileName, vector<stClients> vCli
 	if (file.is_open())
 	{
 
-		for (stClients& C : vClients)
+		for (stClients C : vClients)
 		{
 			if (C.MarkForDelete == false)
 			{
@@ -266,7 +268,58 @@ bool DepositBalanceToClientByAccountNumber(string AccountNumber, double Amount, 
 
 }
 
+short getQuickWithDrawAmount(short QuickWithDrawOption)
+{
+	switch (QuickWithDrawOption) 
+	{
+	case 1:
+		return 20;
+	case 2:
+		return 50;
+	case 3:
+		return 100;
+	case 4: 
+		return 200;
+	case 5:
+		return 400;
+	case 6:
+		return 600;
+	case 7 :
+		return 800;
+	case 8: 
+		return 1000;
+	default:
+		return 0;
 
+
+	}
+}
+
+
+
+void PerfromQuickWithdrawOption(short QuickWithDrawOption)
+{
+	if (QuickWithDrawOption == 9)
+		return;
+
+
+	short WithDrowBalance = getQuickWithDrawAmount(QuickWithDrawOption);
+
+	if (WithDrowBalance > CurrentClient.Balance)
+	{
+		cout << "\nThe amount exceeds your balance, make another choice.\n";
+			cout << "Press Anykey to continue...";
+		system("pause>0");
+		ShowQuickWithdrawScreen();
+		return;
+	}
+
+	vector<stClients> vClients = LoadClientsDataFrom(CLIENT_FILE_NAME);
+
+	DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, WithDrowBalance * -1, vClients);
+
+	CurrentClient.Balance -= WithDrowBalance;
+}
 
 void PerfromNormalWithdrawOption()
 {
@@ -292,9 +345,12 @@ void PerfromDepositOption()
 	vector<stClients> vClients = LoadClientsDataFrom(CLIENT_FILE_NAME);
 
 
+	DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, DepositAmount, vClients);
+	CurrentClient.Balance += DepositAmount;
+
 }
 
-void ShowQucikWithdrawScreen()
+void ShowQuickWithdrawScreen()
 {
 	system("cls");
 	cout << "===========================================\n";
@@ -308,6 +364,8 @@ void ShowQucikWithdrawScreen()
 	cout << "===========================================\n";
 	cout << "Your Balance is " << CurrentClient.Balance;
 
+	PerfromQuickWithdrawOption(ReadQuickWithdrawOption());
+
 	
 
 }
@@ -319,7 +377,14 @@ void GoBackToMainMenue()
 	ShowMainMenue();
 }
 
-
+void ShowDepositScreen()
+{
+	system("cls");
+	cout << "===========================================\n";
+	cout << "\t\tDeposit Screen\n";
+	cout << "===========================================\n";
+	PerfromDepositOption();
+}
 
 void PerfromMainMenueOption(enMainMuneOptios MainMuneOption)
 {	
@@ -328,8 +393,37 @@ void PerfromMainMenueOption(enMainMuneOptios MainMuneOption)
 	case enMainMuneOptios::eQucikWithdraw:
 	{
 		system("cls");
-		ShowQucikWithdrawScreen();
+		ShowQuickWithdrawScreen();
 		GoBackToMainMenue();
+		break;
+	}
+	case enMainMuneOptios::eNormalWithDraw: 
+	{
+		system("cls");
+		ShowNormalWithDrawScreen();
+		GoBackToMainMenue();
+		break;
+	}
+	case enMainMuneOptios::eDeposit: 
+	{
+		system("cls");
+		ShowDepositScreen();
+		GoBackToMainMenue();
+		break;
+	}
+	case enMainMuneOptios::eCheckBalance:
+	{
+		system("cls");
+		ShowCheckBalanceScreen();
+		GoBackToMainMenue();
+		break;
+	}
+	case enMainMuneOptios::eExit: 
+	{
+		system("cls");
+		Login();
+
+
 	}
 	}
 
@@ -391,8 +485,8 @@ void Login()
 
 int main()
 {
-	//Login();
-	ShowMainMenue();
+	Login();
+	//ShowMainMenue();
 
 
 	system("pause>0");
