@@ -1,9 +1,13 @@
 #include <iostream>
+#include <fstream>
 #include<string>
 #include <iomanip>
+#include <vector>
 
 
 void ShowMainMenue();
+void PerfromNormalWithdrawOption();
+
 
 using namespace std;
 //global Varble;
@@ -27,6 +31,148 @@ enum enMainMuneOptios {
 };
 
 
+vector<string> SplitString(string s1, string Delim)
+{
+	vector<string> vString;
+	string word = "";
+	short pos = 0;
+
+	while ((pos = s1.find(Delim)) != std::string::npos)
+	{
+		word = s1.substr(0, pos);
+
+		if (word != "")
+		{
+			vString.push_back(word);
+		}
+
+
+		s1.erase(0, pos + Delim.length());
+	}
+
+	if (s1 != "")
+	{
+		vString.push_back(s1);
+	}
+
+	return vString;
+
+}
+
+stClients ConvertLineToRecord(string line, string Seperator = "#//#")
+{
+	stClients Client;
+	vector<string> vClients = SplitString(line, Seperator);
+
+	Client.AccountNumber = vClients[0];
+	Client.PinCode = vClients[1];
+	Client.Name = vClients[2];
+	Client.Phone = vClients[3];
+	Client.Balance = stod(vClients[4]);
+
+	return Client;
+}
+
+vector<stClients> LoadClientsDataFrom(string fileName)
+{
+	vector<stClients> vClients;
+	fstream file;
+
+	file.open(fileName, ios::in);
+
+	if (file.is_open())
+	{
+		string Line;
+		stClients Client;
+
+
+		while (getline(file, Line))
+		{
+			Client = ConvertLineToRecord(Line);
+
+			vClients.push_back(Client);
+		}
+
+
+		file.close();
+	}
+
+	return vClients;
+
+}
+
+bool FindClientByAccountNumberAndPinCode(string AccountNumber, string PinCode, stClients &Client)
+{
+	vector<stClients> vClients = LoadClientsDataFrom(CLIENT_FILE_NAME);
+
+	for (stClients C : vClients) 
+	{
+		if (C.AccountNumber == AccountNumber && C.PinCode == PinCode)
+		{
+
+			Client = C;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool LoadClientInfo(string AccountNumber, string PinCode)
+{
+	return FindClientByAccountNumberAndPinCode(AccountNumber, PinCode, CurrentClient);
+}
+
+short ReadMainMenueOption()
+{
+
+	cout << "Choose what do you want to do? [1 to 5]? ";
+	short Choice = 0;
+	cin >> Choice;
+
+	return Choice;
+	
+}
+
+
+int ReadWithDrawAmont()
+{
+	int Amount;
+	cout << "\nEnter an amount multiple of 5's ? ";
+	cin >> Amount;
+
+	while (Amount % 5 != 0)
+	{
+		cout << "\nEnter an amount multiple of 5's ? ";
+		cin >> Amount;
+
+	}
+
+	return Amount;
+}
+
+void ShowCheckBalanceScreen()
+{
+	system("cls");
+	cout << "===========================================\n";
+	cout << "\t\tCheck Balance Screen\n";
+	cout << "===========================================\n";
+	cout << "Your Balance is " << CurrentClient.Balance << "\n";
+}
+
+
+void ShowNormalWithDrawScreen()
+{
+	system("cls");
+	cout << "===========================================\n";
+	cout << "\t\tNormal Withdraw Screen\n";
+	cout << "===========================================\n";
+	PerfromNormalWithdrawOption();
+}
+
+
+
 short ReadQuickWithdrawOption()
 {
 	short choice = 0;
@@ -37,6 +183,115 @@ short ReadQuickWithdrawOption()
 		cin >> choice;
 	}
 	return choice;
+}
+
+
+double ReadDepositAmount()
+{
+	double Amount;
+
+	do
+	{
+		cout << "\nEnter a positive Deposit Amount? ";
+		cin >> Amount;
+	} while (Amount <= 0);
+
+	return Amount;
+}
+
+string ConvertRecordToLine(stClients Clients, string Seperator = "#//#")
+{
+	string stClienitRecord = "";
+
+	stClienitRecord += Clients.AccountNumber + Seperator;
+	stClienitRecord += Clients.PinCode + Seperator;
+	stClienitRecord += Clients.Name + Seperator;
+	stClienitRecord += Clients.Phone + Seperator;
+	stClienitRecord += to_string(Clients.Balance);
+
+	return stClienitRecord;
+
+
+
+}
+
+vector <stClients> SaveCleintsDataToFile(string fileName, vector<stClients> vClients)
+{
+	fstream file;
+	file.open(fileName, ios::out);
+
+	string Line;
+
+	if (file.is_open())
+	{
+
+		for (stClients& C : vClients)
+		{
+			if (C.MarkForDelete == false)
+			{
+				Line = ConvertRecordToLine(C);
+				file << Line << endl;
+			}
+		}
+
+
+		file.close();
+	}
+
+	return vClients;
+}
+
+bool DepositBalanceToClientByAccountNumber(string AccountNumber, double Amount, vector<stClients> &vClients)
+{
+	char Answer = 'n';
+
+
+	cout << "\n\nAre you sure you want perfrom this transaction? Y/N ? ";
+	cin >> Answer;
+
+	if (Answer == 'y' || Answer == 'Y')
+	{
+		for (stClients &C : vClients)
+		{
+			if (C.AccountNumber == AccountNumber)
+			{
+				C.Balance += Amount;
+				SaveCleintsDataToFile(CLIENT_FILE_NAME, vClients);
+				cout << "\n\nDone Successfully.New balance is : " << C.Balance;
+				return true;
+			}
+		}
+		return false;
+	}
+
+}
+
+
+
+void PerfromNormalWithdrawOption()
+{
+	int WithDrawBalance = ReadWithDrawAmont();
+	if (WithDrawBalance > CurrentClient.Balance)
+	{
+		cout << "\nThe amount exceeds your balance, make another choice.\n";
+		cout << "Press Anykey to continue...";
+		system("pause>0");
+		ShowNormalWithDrawScreen();
+		return;
+	}
+	vector <stClients> vClients = LoadClientsDataFrom(CLIENT_FILE_NAME);
+	DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, WithDrawBalance * -1, vClients);
+
+
+	CurrentClient.Balance -= WithDrawBalance;
+}
+void PerfromDepositOption()
+{
+	double DepositAmount = ReadDepositAmount();
+
+	vector<stClients> vClients = LoadClientsDataFrom(CLIENT_FILE_NAME);
+
+
 }
 
 void ShowQucikWithdrawScreen()
@@ -53,7 +308,7 @@ void ShowQucikWithdrawScreen()
 	cout << "===========================================\n";
 	cout << "Your Balance is " << CurrentClient.Balance;
 
-	//PerfromMainMenueOption(ReadQuickWithdrawOption());
+	
 
 }
 
@@ -93,6 +348,10 @@ void ShowMainMenue()
 	cout << "\t[4] Check Balance.\n";
 	cout << "\t[5] Logout.\n";
 	cout << "===========================================\n";
+
+
+	PerfromMainMenueOption((enMainMuneOptios)ReadMainMenueOption());
+
 }
 
 
@@ -119,10 +378,8 @@ void Login()
 		cout << "Enter Pin? ";
 		cin >> PinCode;
 
-		//
 
-
-
+		loginFaild = !LoadClientInfo(AccountNumber, PinCode);
 
 
 
@@ -134,7 +391,9 @@ void Login()
 
 int main()
 {
-	Login();
+	//Login();
+	ShowMainMenue();
+
 
 	system("pause>0");
 
